@@ -43,6 +43,11 @@ jobs:
       - name: Install Android API 36 and Bubblewrap
         run: |
           sdkmanager "platforms;android-36" "build-tools;36.1.0"
+          # Bubblewrap validates the legacy tools/bin layout; modern SDKs use cmdline-tools.
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -e "$ANDROID_HOME/tools" ]; then
+            ln -s "$ANDROID_HOME/cmdline-tools/latest" "$ANDROID_HOME/tools"
+          fi
           npm install --global @bubblewrap/cli@1.27.0
           mkdir -p "$HOME/.bubblewrap"
           node -e 'require("fs").writeFileSync(process.env.HOME + "/.bubblewrap/config.json", JSON.stringify({jdkPath: process.env.JAVA_HOME, androidSdkPath: process.env.ANDROID_HOME}))'
@@ -76,6 +81,13 @@ jobs:
         env:
           BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Verify signed artifacts
+        run: |
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --verbose --print-certs app-release-signed.apk
+          jarsigner -verify app-release-bundle.aab
+          keytool -printcert -jarfile app-release-bundle.aab
+          "$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging app-release-signed.apk | head -n 5
 
       - name: Upload signed build artifacts
         uses: actions/upload-artifact@v4
