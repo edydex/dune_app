@@ -29,5 +29,6 @@
   "alphaDependencies": {
     "enabled": false
   },
-  "splashScreenFadeOutDuration": 300
+  "splashScreenFadeOutDuration": 300,
+  "minSdkVersion": 24
 }
